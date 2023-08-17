@@ -11,6 +11,8 @@ import MessageModel from "../src/DAO/mongoManager/models/message.model.js"
 import productModel from './DAO/mongoManager/models/product.model.js'
 import MongoStore from 'connect-mongo'
 import session from "express-session"
+import passport from 'passport'
+import initializePassport from '../src/config/passport.config.js'
  
 const app = express()
 
@@ -77,6 +79,10 @@ const runServer = () => {
         });
     });
 }
+
+initializePassport()
+app.use(passport.initialize())
+app.use(passport.session())
 
 console.log('Connecting...')
 mongoose.connect('mongodb+srv://caballeroperezjavier:prueba2023@ecommerce.0mdas1z.mongodb.net/', {

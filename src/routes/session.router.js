@@ -1,32 +1,19 @@
 import Router from 'express'
 import UserModel from '../DAO/mongoManager/models/user.model.js'
+import passport from "passport";
 
 const router = Router();
 
+router.post('/login', passport.authenticate('login', '/login'), async (req, res) => {
 
-router.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-    const user = await UserModel.findOne({ email, password });
+  if (!req.user) return res.status(400).send('Invalid Credentials')
+  req.session.user = req.user
+
+  return res.redirect('/products')
+});
   
-    if (!user) return res.redirect("/");
-  
-    req.session.user = user;
-  
-    return res.redirect("/products");
-  });
-  
-  router.post("/register", async (req, res) => {
-    const user = req.body;
-  
-    if (
-      user.email === "adminCoder@coder.com" &&
-      user.password === "adminCod3r123"
-    ) {
-      user.rol = "admin";
-    }
-  
-    await UserModel.create(user);
-  
+  router.post("/register",
+    passport.authenticate('register', { failureRedirect: '/register', }), async (req, res) => {
     return res.redirect("/");
   });
   
@@ -38,5 +25,39 @@ router.post("/login", async (req, res) => {
       res.redirect("/");
     });
   });
-  
+
+router.post('/register',
+passport.authenticate('register', { failureRedirect: '/register', }),
+async (req, res) => {
+    res.redirect('/login')
+}
+)
+
+function auth(req, res, next) {
+if (req.session?.user) next()
+else res.redirect('/login')
+}
+router.get('/profile', auth, (req, res) => {
+const user = req.session.user
+
+res.render('profile', user)
+})
+
+
+router.get(
+  '/login-github',
+  passport.authenticate('github', {scope: ['user:email'] }),
+  async(req, res) => {}
+)
+
+router.get(
+  '/githubcallback',
+  passport.authenticate('github', { failureRedirect: '/'}),
+  async(req, res) => {
+      console.log('Callback: ', req.user)
+      req.session.user = req.user
+      console.log('prueba 1', req.session)
+      res.redirect('/profile')
+  }
+)
 export default  router;
