@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true
 },
+  social: String,
   age: Number,
   password: String,
   rol: {
@@ -16,6 +17,10 @@ const userSchema = new mongoose.Schema({
     enum: ["usuario", "admin"],
     default: "usuario",
   },
+  cartId:{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'carts'
+  }
 });
 
 mongoose.set("strictQuery", false);

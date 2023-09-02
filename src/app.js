@@ -13,6 +13,7 @@ import MongoStore from 'connect-mongo'
 import session from "express-session"
 import passport from 'passport'
 import initializePassport from '../src/config/passport.config.js'
+import cookieParser from 'cookie-parser'
  
 const app = express()
 
@@ -79,6 +80,13 @@ const runServer = () => {
         });
     });
 }
+
+app.use(cookieParser())
+app.use(session({
+    secret: 'mysecret',
+    resave: true,
+    saveUninitialized: true
+}) )
 
 initializePassport()
 app.use(passport.initialize())

@@ -3,9 +3,13 @@ import local from 'passport-local'
 import UserModel from "../DAO/mongoManager/models/user.model.js";
 import { createHash, isValidPassword } from "../utils.js";
 import GitHubStrategy from 'passport-github2'
-import GoogleStrategy from 'passport-google-oauth20';
+import passportJWT from 'passport-jwt'
+import { extractCookie, generateToken } from "../utils.js";
+
 
 const LocalStrategy = local.Strategy
+const JWTstrategy = passportJWT.Strategy
+const JWTextract = passportJWT.ExtractJwt
 
 const initializePassport = () => {
 
@@ -16,38 +20,68 @@ const initializePassport = () => {
             callbackURL: 'http://127.0.0.1:8080/api/session/githubcallback'
         },
         async (accessToken, refreshToken, profile, done) => {
+            console.log(profile)
+            
             try {
-                const user = await UserModel.findOne({ email: profile._json.email });
-    
-                if (user) {
-                    console.log('User already exists ' + profile._json.email);
-                    return done(null, user);
-                }
-                // Dividimos para sacar el nombre y el apellido
+                const email = profile._json.email
+                console.log( { email })
+                const user = await UserModel.findOne({ email }).lean().exec()
+                if(user) {
+                    console.log('User already exits!!')
+                } else {
+                    console.log(` Registering User`)
+
+                    // Dividimos para sacar el nombre y el apellido
                 const fullName = profile._json.name;
                 const nameParts = fullName.split(' ');
                 const firstName = nameParts[0];
                 const lastName = nameParts.slice(1).join(' ');
 
-                const newUser = {
-                    first_name: firstName,
-                    last_name: lastName,
-                    age: profile._json.public_repos,
-                    email: profile._json.email,
-                    password: '', 
-                    type: profile._json.type
-                };
-    
-                console.log(newUser);
-                const result = await UserModel.create(newUser);
-                return done(null, result);
+
+                    const newUser = {
+                        first_name: firstName,
+                        last_name: lastName,
+                        email,
+                        age: profile._json.public_repos,
+                        password: '',
+                        social: 'github',
+                        rol: 'user'
+                    }
+                    const result = await UserModel.create(newUser)
+                    console.log(result)
+                }
+
+                const token = generateToken(user)
+                user.token = token
+
+                return done(null, user)
+
             } catch (e) {
-                return done('Error to login with GitHub: ' + e);
+                return done('Error to login iwth gitrhub' + e) 
             }
         }
-    ));
+    ))
 
-        
+    passport.use('jwt', new JWTstrategy(
+        {
+            jwtFromRequest: JWTextract.fromExtractors([extractCookie]),
+            secretOrKey: 'secretForJWT'
+        },
+        (jwt_payload, done) => {
+            console.log( { jwt_payload } )
+            return done(null, jwt_payload)
+        }
+    ))
+
+    passport.serializeUser(async (user, done) => {
+        console.log('!')
+        return done(null, user._id)
+    })
+
+    passport.deserializeUser(async (id, done) => {
+        const user = await UserModel.findById(id)
+        return user
+    })    
 
 
 
