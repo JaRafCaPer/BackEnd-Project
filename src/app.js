@@ -14,11 +14,16 @@ import session from "express-session"
 import passport from 'passport'
 import initializePassport from '../src/config/passport.config.js'
 import cookieParser from 'cookie-parser'
+import { config } from 'dotenv'
+
+config({ path: '.env' })
+
  
 const app = express()
 
-const uri = 'mongodb+srv://caballeroperezjavier:prueba2023@ecommerce.0mdas1z.mongodb.net/'
+const uri = process.env.URL_MONGO
 const dbName = 'ecommerce'
+const port = process.env.PORT
 
 app.engine('handlebars', handlebars.engine())
 app.set('views', __dirname + '/views')
@@ -48,7 +53,7 @@ app.use('/api/carts', cartRouter)
 app.use('/api/session', sessionRouter)
 
 const runServer = () => {
-    const httpServer = app.listen(8080, () => console.log('Listening...'))
+    const httpServer = app.listen(port, () => console.log('Listening...'))
     const io = new Server(httpServer)
 
     io.on('connection', socket => {
@@ -93,7 +98,7 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 console.log('Connecting...')
-mongoose.connect('mongodb+srv://caballeroperezjavier:prueba2023@ecommerce.0mdas1z.mongodb.net/', {
+mongoose.connect(uri, {
     dbName: 'ecommerce'
 })
     .then(() => {

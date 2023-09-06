@@ -1,26 +1,39 @@
 import passport from "passport";
 import local from 'passport-local'
 import UserModel from "../DAO/mongoManager/models/user.model.js";
+import CartModel from "../DAO/mongoManager/models/cart.model.js";
 import { createHash, isValidPassword } from "../utils.js";
-import GitHubStrategy from 'passport-github2'
+import github from 'passport-github2'
 import passportJWT from 'passport-jwt'
+import google from "passport-google-oauth20";
 import { extractCookie, generateToken } from "../utils.js";
 
 
-const LocalStrategy = local.Strategy
-const JWTstrategy = passportJWT.Strategy
-const JWTextract = passportJWT.ExtractJwt
+const LocalStrategy = local.Strategy;
+const JwtStrategy = passportJWT.Strategy;
+const GitHubStrategy = github.Strategy;
+const GoogleStrategy = google.Strategy;
+
+const clientIdGitHub = process.env.CLIENT_GITHUB_ID;
+const clientSecretGitHub = process.env.CLIENT_GITHUB_SECRET;
+const callbackUrlGitHub = process.env.CLIENT_GITHUB_CALLBACK;
+const clientIdGoogle = process.env.CLIENT_GOOGLE_ID;
+const clientSecretGoogle = process.env.CLIENT_GOOGLE_SECRET;
+const callbackUrlGoogle = process.env.CLIENT_GOOGLE_CALLBACK;
+const JwtExtract = passportJWT.ExtractJwt;
+const privateKey = process.env.PRIVATE_KEY
+
 
 const initializePassport = () => {
 
     passport.use('github', new GitHubStrategy(
         {
-            clientID: 'Iv1.539642c92e819c00',
-            clientSecret: '1d43f3bf3c6f41be319928a7c6a57f3dff954915',
-            callbackURL: 'http://127.0.0.1:8080/api/session/githubcallback'
+            clientID: clientIdGitHub,
+            clientSecret: clientSecretGitHub,
+            callbackURL: callbackUrlGitHub,
         },
         async (accessToken, refreshToken, profile, done) => {
-            console.log(profile)
+            // console.log(profile)
             
             try {
                 const email = profile._json.email
@@ -32,11 +45,12 @@ const initializePassport = () => {
                     console.log(` Registering User`)
 
                     // Dividimos para sacar el nombre y el apellido
-                const fullName = profile._json.name;
-                const nameParts = fullName.split(' ');
-                const firstName = nameParts[0];
-                const lastName = nameParts.slice(1).join(' ');
+                    const fullName = profile._json.name;
+                    const nameParts = fullName.split(' ');
+                    const firstName = nameParts[0];
+                    const lastName = nameParts.slice(1).join(' ');
 
+                    const newCart = await CartModel.create({ products: [] });
 
                     const newUser = {
                         first_name: firstName,
@@ -45,45 +59,87 @@ const initializePassport = () => {
                         age: profile._json.public_repos,
                         password: '',
                         social: 'github',
-                        rol: 'user'
+                        rol: 'user',
+                        cartId: newCart._id
                     }
                     const result = await UserModel.create(newUser)
                     console.log(result)
+                    user = newUser
                 }
 
                 const token = generateToken(user)
                 user.token = token
-
+                // console.log(user.token);
                 return done(null, user)
 
             } catch (e) {
-                return done('Error to login iwth gitrhub' + e) 
+                return done('Error to login with github' + e) 
             }
         }
     ))
+    
+    passport.use(
+        "google",
+        new GoogleStrategy(
+          {
+            clientID: clientIdGoogle,
+            clientSecret: clientSecretGoogle,
+            callbackURL: callbackUrlGoogle,
+          },
+          async (accessToken, refreshToken, profile, cb) => {
+            try {
+              const email = profile._json.email;
+              const name = profile._json.given_name;
+              const lastName = profile._json.family_name;
+    
+              let user = await UserModel.findOne({ email: email });
+    
+              if (!user) {
+                console.log("New user");
+    
+                const newCart = await CartModel.create({ products: [] });
+    
+                const newUser = {
+                  first_name: name,
+                  last_name: lastName,
+                  email: email,
+                  password: "",
+                  social: "Google",
+                  cartId: newCart._id,
+                };
+    
+                user = await UserModel.create(newUser);
+              }
+    
+              const token = generateToken(user);
+    
+              user.token = token;
+    
+              return cb(null, user);
+            } catch (err) {
+              return cb(`Error: ${err}`);
+            }
+          }
+        )
+      );
 
-    passport.use('jwt', new JWTstrategy(
-        {
-            jwtFromRequest: JWTextract.fromExtractors([extractCookie]),
-            secretOrKey: 'secretForJWT'
-        },
-        (jwt_payload, done) => {
-            console.log( { jwt_payload } )
-            return done(null, jwt_payload)
-        }
-    ))
 
-    passport.serializeUser(async (user, done) => {
-        console.log('!')
-        return done(null, user._id)
-    })
-
-    passport.deserializeUser(async (id, done) => {
-        const user = await UserModel.findById(id)
-        return user
-    })    
-
-
+      passport.use(
+        "jwt",
+        new JwtStrategy(
+          {
+            jwtFromRequest: JwtExtract.fromExtractors([extractCookie]),
+            secretOrKey:  privateKey,
+          },
+          async (jwt_payload, done) => {
+            try {
+              return done(null, jwt_payload);
+            } catch (err) {
+              return done(err);
+            }
+          }
+        )
+      );
 
     passport.use('register', new LocalStrategy(
         {
@@ -128,7 +184,9 @@ const initializePassport = () => {
                     console.error('Password not valid')
                     return done(null, false)
                 }
-
+                const token = generateToken(user);
+                // console.log('login', user);
+                user.token = token;
                 return done(null, user)
             } catch (e) {
                 return done('Error login ' + error)

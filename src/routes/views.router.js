@@ -10,8 +10,8 @@ router.get('/products', async (req, res) => {
     const products = await ProductModel.find().lean().exec()
     const carts = await cartModel.find();
     const cartId = carts ? carts[0]._id : null
-    const user = req.session.user;
-    console.log(user);
+    const user = req.user;
+    console.log('Proiducts:', user);
     res.render('products', {products, cartId, user})
 })
 
@@ -155,7 +155,7 @@ function auth(req, res, next) {
 }
 
 router.get('/profile', auth, (req, res) => {
-  const user = req.session.user
+  const user = req.user
 
   res.render('profile', user)
 })
