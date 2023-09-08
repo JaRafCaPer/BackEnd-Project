@@ -22,7 +22,8 @@ export const generateToken = user => {
 }
 
 export const extractCookie = req => {
-    return (req && req.cookies) ? req.cookies[privateKey] : null
+    const token = (req?.cookies) ? req.cookies[privateKey] : null;
+    return token;
 }
 
 export default __dirname

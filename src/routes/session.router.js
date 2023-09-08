@@ -50,7 +50,7 @@ router.get('/profile',
     (req, res) => {
         
         const { user } = req 
-        // console.log('profile:', user)
+       console.log('profile:', user)
         res.render('profile', user)
     }
 )
@@ -64,10 +64,10 @@ router.get(
 router.get('/githubcallback',
     passport.authenticate('github', { failureRedirect: '/fail-github' }),
     (req, res) => {
-        // console.log('Callback:', req.user)
+        console.log('Callback:', req.user)
         const { user } = req
-        console.log(user)
-        res.cookie(privateKey, user, user.token).redirect('/products')
+        console.log('linea 69', user)
+        res.cookie(privateKey, user.token).redirect('/products')
     }
 )
 

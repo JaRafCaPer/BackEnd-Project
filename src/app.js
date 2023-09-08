@@ -25,32 +25,31 @@ const uri = process.env.URL_MONGO
 const dbName = 'ecommerce'
 const port = process.env.PORT
 
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json())
+
 app.engine('handlebars', handlebars.engine())
 app.set('views', __dirname + '/views')
 app.set('view engine', 'handlebars')
 
-app.use(express.urlencoded({ extended: true }))
-app.use(express.json())
 
-app.use(session({
-    store: MongoStore.create({
-        mongoUrl: uri,
-        dbName,
-        mongoOptions: {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        },
-        ttl: 100
-    }),
-    secret: 'secret',
-    resave: true,
-    saveUninitialized: true
-}))
 
-app.use('/', viewsRouter)
-app.use('/api/products', productRouter)
-app.use('/api/carts', cartRouter)
-app.use('/api/session', sessionRouter)
+// app.use(session({
+//     store: MongoStore.create({
+//         mongoUrl: uri,
+//         dbName,
+//         mongoOptions: {
+//             useNewUrlParser: true,
+//             useUnifiedTopology: true
+//         },
+//         ttl: 100
+//     }),
+//     secret: 'secret',
+//     resave: true,
+//     saveUninitialized: true
+// }))
+
+
 
 const runServer = () => {
     const httpServer = app.listen(port, () => console.log('Listening...'))
@@ -108,6 +107,9 @@ mongoose.connect(uri, {
     .catch(e => console.log(`Can't connect to DB`))
     runServer()
 
-
+    app.use('/', viewsRouter)
+    app.use('/api/products', productRouter)
+    app.use('/api/carts', cartRouter)
+    app.use('/api/session', sessionRouter)
 
 
