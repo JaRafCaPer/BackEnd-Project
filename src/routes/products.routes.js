@@ -35,7 +35,8 @@ router.get(
 
 router.post("/addproducts", createProduct);
 
-router.get('/listproducts', passport.authenticate("jwt", { session: false }), getListProducts)
+//router.get('/listproducts', passport.authenticate("jwt", { session: false }), getListProducts)
+router.get('/listproducts', getListProducts)
 
 router.get(
   "/:pid",
