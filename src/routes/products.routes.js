@@ -14,8 +14,8 @@ import { Router } from "express";
 import passport from "passport";
 const router = Router();
 
-//router.get(  "/",  passport.authenticate("jwt", { session: false }),  getProducts);
-router.get(  "/",  getProducts);
+router.get(  "/",  passport.authenticate("jwt", { session: false }),  getProducts);
+
 
 router.get(
   "/addproducts",
@@ -31,8 +31,8 @@ router.get(
 
 router.post("/addproducts", createProduct);
 
-//router.get('/listproducts', passport.authenticate("jwt", { session: false }), getListProducts)
-router.get('/listproducts', getListProducts)
+router.get('/listproducts', passport.authenticate("jwt", { session: false }), getListProducts)
+
 
 router.get(
   "/:pid",
